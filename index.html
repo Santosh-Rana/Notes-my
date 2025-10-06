@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Morden secure Note hub</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+ <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" /><link>
+  
+  <style>
+    /* ----------------------
+    BASIC & GLOBAL STYLING
+    ---------------------- */
+  
+
+    body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+}
+    /* ----------------------
+    CHAT MODAL STYLING
+    ---------------------- */
+
+    /* Full-screen overlay (Modal Background) */
+    .chat-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6); /* Dim background */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    /* When overlay is active (chat is open) */
+    .chat-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Chat Window Container (The modern card) */
+    .chat-container {
+      background:linear-gradient(mistyrose,#8EC5FF);
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      width: 90%;
+      max-width: 400px;
+      height: 65vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      transform: scale(0.95);
+      transition: transform 0.3s ease;
+   
+    
+    }
+
+    /* Animation when opening */
+    .chat-overlay.active .chat-container {
+      transform: scale(1);
+    }
+
+    /* Chat Header */
+    .chat-header {
+      padding: 15px 20px;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      color: var(--bg-color);
+      border-radius: 15px;
+      font-size: 1.2em;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top:10px;
+      margin-left:5px;
+      margin-right:5px;
+      box-shadow:0px 10px 20px rgba(0,0,0,0.3);
+    }
+
+    /* Modal close button styling */
+    .close-btn {
+      background: none;
+      border: none;
+      color:deeppink;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 5px;
+      line-height: 1;
+      transition: color 0.2s;
+      margin-left: 10px;
+    }
+
+    .close-btn:hover {
+      color: var(--chat-bg);
+    }
+
+    /* Chat Box (Messages Area) */
+    .chat-box {
+      flex-grow: 1;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    /* Scrollbar Styling (Optional: for a cleaner look) */
+    .chat-box::-webkit-scrollbar {
+        width: 8px;
+    }
+    .chat-box::-webkit-scrollbar-thumb {
+        background-color: #4a4d6e;
+        border-radius: 4px;
+    }
+
+    /* ----------------------
+    MESSAGE STYLING
+    ---------------------- */
+    .message {
+      max-width: 85%;
+      padding: 10px 15px;
+      border-radius: 18px;
+      line-height: 1.5;
+      word-wrap: break-word;
+      font-size: 14px;
+    }
+
+    .user {
+      align-self: flex-end;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      color:white; /* Dark text on light background */
+      border-bottom-right-radius: 4px;
+      font-weight: 600;
+      font-family: 'times new roman';
+      box-shadow:0px 10px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .bot {
+      align-self: flex-start;
+      background-color:white;
+      color:black;
+      border-bottom-left-radius: 4px;
+      font-weight:600;
+      font-family: 'times new roman';
+      box-shadow:0px 10px 10px rgba(0,0,0,0.3);
+    }
+
+    pre {
+      background: #1a1a2e; /* Darker background for code */
+      padding: 10px;
+      border-radius: 8px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--primary-color);
+      font-family: 'Consolas', 'Courier New', monospace;
+      margin: 10px 0 0 0;
+    }
+    
+    code {
+        font-size: 0.9em;
+    }
+
+
+    /* ----------------------
+    INPUT GROUP STYLING
+    ---------------------- */
+    .input-group {
+      padding: 10px;
+      background-color:white; /* Slightly darker bottom bar */
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      border-radius:20px 20px 20px 5px;
+      box-shadow:0px 10px 10px rgba(0,0,0,0.3);
+      margin:10px 10px 10px;
+    }
+
+    textarea {
+      flex: 1;
+      padding: 10px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      resize: none;
+      border: none;
+      background-color:none;/* Input background */
+      outline: none;
+      height: 40px; /* Fixed height for single line */
+      line-height: 20px;
+      overflow: hidden;
+      transition: background-color 0.2s;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    textarea:focus {
+      background-color: #555877;
+    }
+    
+    /* Buttons in the input group */
+    .input-group button {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      border: none;
+      color: var(--bg-color);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background 0.2s, transform 0.1s;
+      flex-shrink: 0;
+    }
+    
+    .input-group button:hover {
+      background: var(--secondary-color);
+    }
+    
+    .input-group button:active {
+        transform: scale(0.95);
+    }
+
+    /* ----------------------
+    LAUNCH BUTTON STYLING
+    ---------------------- */
+    #launchChatBtn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      font-size: 28px;
+      border: none;
+      padding: 0;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+      z-index: 1001;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    #launchChatBtn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    #launchChatBtn:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    #userInput, #send , #mouth{
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+    }
+    #userInput{
+      color:white;
+      border-radius:30px;
+    }
+    span{
+      color:white;
+      font-family: 'times new roman';
+    }
+    /* Basic Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  /* --- EDITED: SMOOTHER/BOUNCY TRANSITIONS --- */
+  transition: background-color 0.4s ease-out, color 0.4s ease-out, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease-in-out;
+}
+/* --- THEME STYLES (Light and Dark Mode) --- */
+.light-mode { background-color: #f4f7f6; color: #333; }
+.dark-mode { background-color: #1e1e1e; color: #f0f0f0; }
+
+.dark-mode header,
+.dark-mode .new-note-area,
+.dark-mode .note-card {
+    background-color: #2c2c2c; 
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode input[type="text"],
+.dark-mode #note-content-input,
+.dark-mode select {
+    background-color: #3a3a3a;
+    color: #f0f0f0;
+    border-color: #555 !important;
+}
+
+
+/* --- HEADER & CONTROLS (Modernized) --- */
+header {
+    padding: 20px 40px;
+    background: linear-gradient(to right, #6a11cb, #2575fc);
+    color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+h1 { margin: 0; font-family: times;}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 40px;
+    gap: 15px;
+    background-color: var(--body-bg-color, #fff);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.controls button {
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-size: 14px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    /* EDITED: Add transition for bouncy effect */
+    transition: background 0.2s, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s;
+}
+.controls button:hover {
+    background: #0056b3;
+    /* EDITED: Bouncy transform */
+    transform: translateY(-3px) scale(1.05);
+}
+.dark-mode .controls { background-color: #2c2c2c; }
+
+
+/* --- NOTE INPUT AREA (Card-like) --- */
+.new-note-area {
+    width: 90%;
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 25px;
+    background-color: #fff;
+    border-radius: 15px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    border:1px solid black;
+}
+
+#topic-input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+#note-content-input {
+    width: 100%;
+    min-height: 180px; 
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none; 
+    white-space: pre-wrap; 
+}
+#note-content-input:empty::before {
+    content: attr(placeholder);
+    display: block;
+    color: #999;
+    font-style: italic;
+}
+
+
+.note-options {
+    display:flex; 
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap; 
+}
+
+.format-btn {
+    padding: 8px 10px !important; 
+    font-size: 16px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 5px !important;
+}
+
+#add-note {
+    color: white;
+    font-size: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50% !important;
+    margin-left:auto;
+}
+
+/* --- IMAGE STYLES (FIXED) --- */
+.note-content img,
+#note-content-input img {
+    max-width: 100%; 
+    width: 40%; /* Default width */
+    height: auto;
+    display: block;
+    margin: 10px auto;
+    cursor: pointer;
+    border: 2px solid transparent; 
+    transition: transform 0.3s ease, width 0.3s ease, margin 0.3s ease; /* ADD margin transition */
+}
+
+/* NOTE: The selection style will now be applied dynamically via JavaScript */
+#note-content-input img:focus {
+    outline: none; 
+}
+
+
+/* --- NOTES DISPLAY (Modern Grid) --- */
+.notes-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 25px;
+    padding: 25px 40px;
+}
+
+.note-card {
+    padding: 20px;
+    border-radius: 15px;
+    background-color: #ffffff;
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    word-wrap: break-word;
+    position: relative;
+    overflow: hidden;
+    /* EDITED: Add a subtle card entrance/update feel */
+    transition: box-shadow 0.3s ease-in-out, transform 0.2s ease-out;
+}
+/* EDITED: Slight lift on hover */
+.note-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+}
+
+.note-actions button {
+    background:conic-gradient(lightgoldenrodyellow);
+    border: none;
+    border-radius: 20px;
+    padding: 8px 12px;
+    cursor: pointer;
+    color: #333;
+    font-weight: 700;
+    box-shadow:0px 1px 2px rgba(0,0,0,0.3);
+    margin-top:5px;
+    font-family:'times';
+}
+
+/* UPDATED: Share Text button style */
+.note-actions .share-txt-btn { 
+    background: forestgreen; /* WhatsApp Green */
+    color: white;
+    font-weight: 700;
+    margin-right: 5px; 
+    box-shadow: 0px 1px 2px rgba(0,0,0,0.3);
+    font-family:'Segoe UI';
+}
+
+.note-actions .share-txt-btn:hover {
+    background:navy;
+}
+
+/* NEW: Share Image button style */
+.note-actions .share-img-btn { 
+    background:midnightblue; /* Blue for Image */
+    color: white;
+    font-weight: 700;
+    margin-right: 5px; 
+    box-shadow: 0px 1px 2px rgba(0,0,0,0.3);
+    font-family:'Segoe UI';
+}
+
+.note-actions .share-img-btn:hover {
+    background:olive;
+}
+
+/* --- NEW COPYRIGHT STYLES --- */
+.copyright-info {
+    font-family: 'Times New Roman', serif;
+    font-size: 12px;
+    margin-top: 5px; /* Spacing from the date */
+    opacity: 0.7;
+}
+
+.dark-mode .copyright-info {
+    opacity: 0.6;
+}
+/* --- END NEW COPYRIGHT STYLES --- */
+
+
+/* --- SIDEBAR STYLING --- */
+.sidebar {
+    width: 280px; 
+    padding: 20px;
+    position: fixed;
+    left: -280px; 
+    top:146px; 
+    bottom: 100px; 
+    z-index: 100;
+    /* EDITED: Bouncy effect for the sidebar */
+    transition: left 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background:none;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    border-top:1px solid black;
+    border-bottom: 1px solid black;
+    height: auto; 
+    backdrop-filter: blur(25px); 
+    -webkit-backdrop-filter:blur(25px); 
+    border-radius:10px;
+}
+
+.sidebar.open { 
+    left: 0; 
+}
+
+.sidebar h2 {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-left: 1px solid silver; 
+    border-top: 1px solid silver;
+    color:black;
+    border-radius:10px;
+    padding-left:10px;
+    font-family:times;
+}
+
+#category-list {
+    list-style: none;
+    padding: 0;
+}
+
+.category-item {
+    padding: 12px 15px; 
+    margin-bottom: 8px; 
+    cursor: pointer;
+    border-radius: 8px; 
+    transition: background-color 0.2s, color 0.2s, transform 0.1s;
+    font-weight: 500;
+}
+
+.category-item:hover {
+    background-color: #f0f0f0;
+    /* EDITED: More pronounced bouncy effect */
+    transform: translateX(5px) scale(1.02); 
+}
+
+.category-item.active {
+    background-color: #007bff; 
+    color: white;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border: none; 
+}
+
+/* --- DARK MODE ADAPTATIONS --- */
+.dark-mode .sidebar {
+    background-color: #2c2c2c;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode .sidebar h2 {
+    color: #2575fc; 
+    border-bottom: 1px solid #444; 
+}
+
+.dark-mode .category-item {
+    color: #f0f0f0;
+}
+
+.dark-mode .category-item:hover {
+    background-color: #3a3a3a;
+}
+
+.dark-mode .category-item.active {
+    background-color: #6a11cb; 
+    color: white;
+}
+
+/* --- MODAL STYLES --- */
+.modal {
+    display: none; /* Controlled by JS */
+    position: fixed;
+    z-index: 200;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background:none; /* Darkened, semi-transparent background */
+    justify-content: center;
+    align-items: center;
+     backdrop-filter: blur(10px);
+ -webkit-backdrop-filter:blur(10px);
+}
+
+.modal.open { 
+    display: flex; /* Show the modal */
+}
+
+.modal-content {
+background: none;
+    padding: 30px;
+    border-radius: 10px;
+    width: 80%;
+    max-width: 450px; /* Max width for a clean, centered box */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    text-align: left;
+    backdrop-filter: blur(10px);
+-webkit-backdrop-filter:blur(10px);
+    
+    /* EDITED: Subtle entrance animation property to the content box */
+    transform: scale(0.95); 
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+/* EDITED: When the modal is open, bring the content to full scale with a bounce */
+.modal.open .modal-content { 
+    transform: scale(1);
+}
+
+#modal-title {
+    color: #6a11cb; /* A nice color for the title */
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.modal-content label {
+    display: block;
+    margin-top: 15px;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.modal-content input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+#password-message {
+    font-size: 14px;
+    margin-top: 5px;
+}
+
+#modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 25px;
+}
+
+#modal-actions button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+#cancel-pass-btn {
+    background-color: #6c757d; /* Grey/Neutral */
+    color: white;
+}
+
+#save-pass-btn,
+#verify-pass-btn {
+    background-color: #28a745; /* Success Green */
+    color: white;
+}
+
+#cancel-pass-btn:hover,
+#save-pass-btn:hover,
+#verify-pass-btn:hover {
+    transform: translateY(-1px);
+    opacity: 0.9;
+}
+
+
+/* --- DARK MODE ADAPTATIONS --- */
+.dark-mode .modal-content {
+    background-color: #2c2c2c; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+.dark-mode .modal-content input[type="password"] {
+    background-color: #3a3a3a;
+    color: #f0f0f0;
+    border-color: #555;
+}
+
+.dark-mode #modal-title {
+     color: #2575fc;
+     border-bottom: 1px solid #444;
+}
+.format-btn{
+    font-size:10px;
+    box-shadow:0px 5px 10px rgba(0,0,0,0.6);
+}
+#image-upload{
+    background:conic-gradient(darkkhaki);
+    border-radius:10px;
+    height:35px;
+    padding-top:5px;
+    padding-left:5px;
+    box-shadow:0px 5px 10px rgba(0,0,0,0.6);
+    border:none;
+}
+#category-select{
+    background:conic-gradient(darkkhaki);
+border-radius:10px;
+height:35px;
+padding-top:2px;
+padding-left:10px;
+text-align:center;
+width:95px;
+border:none;
+box-shadow:0px 5px 10px rgba(0,0,0,0.6);
+}
+#font-style-select{
+    background:conic-gradient(darkkhaki);
+border-radius:10px;
+height:35px;
+padding-top:2px;
+padding-left:10px;
+text-align:center;
+width:95px;
+box-shadow:0px 5px 10px rgba(0,0,0,0.6);
+    border:none;
+}
+#font-color-picker{
+    background:conic-gradient(ivory);
+height:3px;
+padding-top:2px;
+text-align:center;
+border:none;
+box-shadow:0px 5px 10px rgba(0,0,0,0.6);
+}
+#add-note{
+    background:linear-gradient(mistyrose,lightcyan);
+    color:black;
+    box-shadow:0px 10px 10px rgba(0,0,0,0.3);
+    border:none;
+}
+#category-toggle ,#recycle-bin-toggle ,#mode-toggle ,#set-password-btn, #increase-text ,#decrease-text{
+    box-shadow:0px 5px 10px rgba(0,0,0,0.6);
+}
+#web-pg{
+    font-family:'times new roman';
+    box-shadow:0px 5px 10px rgba(0,0,0,0.3);
+    padding:5px 5px 5px 5px;
+    border-radius:10px;
+    text-size:0px;
+    color:Red;
+   
+}
+a{
+    text-decoration: none;
+}
+/* --- NEW POPUP STYLES --- */
+#beta-popup {
+    display: none; /* Hidden by default, controlled by JS */
+    position: fixed;
+    top: 110px;
+    right: 25px;
+    width: 300px;
+    padding: 15px;
+    background:none; /* Warning color */
+    color: black;
+    border-left: 2px solid black;
+    border-bottom:1px solid black;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 500; /* High z-index to be on top of everything */
+    font-size: 14px;
+    /* EDITED: Add a subtle entrance/exit transition */
+    transition: opacity 0.5s ease-in-out, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: translateX(100%); /* Start off-screen */
+    opacity: 0;
+      backdrop-filter: blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  
+}
+
+#beta-popup.show {
+    transform: translateX(0); /* Slide in */
+    opacity: 1;
+}
+
+#close-popup-btn {
+    float: right;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    margin-left: 10px;
+    color: #333;
+}
+#close-popup-btn:hover {
+    color: #dc3545;
+}
+
+/* Dark Mode adaptation for the popup */
+.dark-mode #beta-popup {
+    background-color: #3a3a3a;
+    color: #ffc107;
+    border-color: #555;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+}
+
+.dark-mode #close-popup-btn {
+    color: #ffc107;
+}
+
+
+  </style>
+</head>
+
+<body class="light-mode">
+    <header>
+        <h1>Digital Note Hub</h1>
+    </header>
+
+    <div class="controls">
+        <button id="category-toggle" title="Toggle Category List"><i class="fa-solid fa-list" style="color: #ffffff;"></i></button>
+        <button id="recycle-bin-toggle" title="View Recycle Bin"><i class="fa-solid fa-trash-can-arrow-up" style="color: #ffffff;"></i></button>
+        <button id="mode-toggle" title="Toggle Dark/Light Mode"><i class="fa-solid fa-moon" style="color: #ffffff;"></i></button>
+        <button id="set-password-btn" title="Set GF/BF Password"><i class="fa-solid fa-lock fa-beat" style="color: #ffffff;"></i></button>
+        <button id="increase-text" title="Increase Note Text Size">A+</button>
+        <button id="decrease-text" title="Decrease Note Text Size">A-</button>
+    </div>
+  
+   <aside class="sidebar" id="sidebar">
+        <h2>Filter by Category</h2>
+        <ul id="category-list"></ul>
+    </aside>
+
+    <main>
+        <section class="new-note-area">
+            <input type="text" id="topic-input" placeholder="Enter Note Topic Here..." required>
+            <div id="note-content-input" contenteditable="true" placeholder="Enter your note content here..." required></div>
+            
+            <div class="note-options">
+                <button class="format-btn" title="Align Left" onclick="execFormatCommand('justifyLeft')"><i class="fa-solid fa-align-left"></i></button>
+                <button class="format-btn" title="Align Center" onclick="execFormatCommand('justifyCenter')"><i class="fa-solid fa-align-center"></i></button>
+                <button class="format-btn" title="Align Right" onclick="execFormatCommand('justifyRight')"><i class="fa-solid fa-align-right"></i></button>
+                <button class="format-btn" title="Justify" onclick="execFormatCommand('justifyFull')"><i class="fa-solid fa-align-justify"></i></button>
+                
+                <button class="format-btn" title="Bold" onclick="execFormatCommand('bold')"><i class="fa-solid fa-bold"></i></button>
+                <button class="format-btn" title="Italic" onclick="execFormatCommand('italic')"><i class="fa-solid fa-italic"></i></button>
+                <button class="format-btn" title="Underline" onclick="execFormatCommand('underline')"><i class="fa-solid fa-underline"></i></button>
+                
+                <button class="format-btn" title="Rotate 90°" id="rotate-btn"><i class="fa-solid fa-rotate-right"></i></button>
+                <button class="format-btn" title="Resize Small (25%)" onclick="resizeSelectedImage('small')"><i class="fa-solid fa-minimize"></i> Small</button>
+                <button class="format-btn" title="Resize Large (50%)" onclick="resizeSelectedImage('large')"><i class="fa-solid fa-maximize"></i> Large</button>
+
+                <input type="file" id="image-upload" accept="image/*" title="Add Image" style="width: 100px;">
+                
+                <select id="category-select" title="Select Category"></select>
+                
+                <select id="font-style-select" title="Font Style" onchange="execFormatCommand('fontName', this.value)">
+                     <option value="Arial, sans-serif">Arial</option>
+                     <option value="'Courier New', monospace">Monospace</option>
+                     <option value="'Times New Roman', serif">Times New Roman</option>
+                     <option value="'Georgia', serif">Georgia</option>
+                     <option value="'cursive', serif">Cursive</option>
+                     <option value="'times', serif">Times</option>
+                     <option value="'calibri'">calibri</option>
+                     <option value="'tahoma'">tahoma</option>
+                     <option value="'fantasy'">Gfantasy</option>
+                    
+                     
+                 </select>
+                 <input type="color" id="font-color-picker" value="#333333" title="Font Color" onchange="execFormatCommand('foreColor', this.value)" style="height: 35px; border-radius: 5px;">
+                 
+                 <button id="add-note" title="Add Note">+</button>
+            </div>
+        </section>
+
+        <section class="notes-container" id="notes-container"></section>
+    </main>
+    
+    <div id="password-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="document.getElementById('password-modal').classList.remove('open');">&times;</span>
+            <h3 id="modal-title">Set Password for GF/BF Notes</h3>
+            <label for="old-password-input" id="old-pass-label" style="display:none;">Old Password:</label>
+            <input type="password" id="old-password-input" style="display:none;">
+            
+            <label for="password-input" id="new-pass-label">Password:</label>
+            <input type="password" id="password-input">
+            
+            <label for="confirm-password-input" id="confirm-pass-label" style="display:none;">Confirm Password:</label>
+            <input type="password" id="confirm-password-input" style="display:none;">
+            
+            <p id="password-message" style="color: red; margin-bottom: 15px;"></p>
+
+            <div id="modal-actions">
+                 <button id="cancel-pass-btn">Cancel</button>
+                 <button id="save-pass-btn" style="display:none;">Save Password</button>
+                 <button id="verify-pass-btn" style="display:none;">Verify</button>
+            </div>
+        </div>
+    </div>
+ <div id="beta-popup">
+     <span id="close-popup-btn" title="Stop showing this message">&times;</span>
+     <strong>Image Sharing is on Beta!</strong><br>
+     Please go to the website(copy the link) for sharing note as picture:
+     <a href="https://santosh-rana.github.io/Notes-1.5/" target="_blank" style="font-weight: bold; color: #007bff;">https://santosh-rana.github.io/Notes-1.5/</a>
+ </div>
+   
+
+  <button id="launchChatBtn" onclick="toggleChatModal()">
+    <i class="fa-solid fa-robot fa-beat" style="color: #ffffff;"></i>
+  </button>
+
+  <div id="chatOverlay" class="chat-overlay">
+    <div class="chat-container">
+        
+      <div class="chat-header">
+        <span>Chat-Bot Summarizer</span>
+        <button class="close-btn" onclick="toggleChatModal()">&times;</button>
+      </div>
+        
+      <div id="chatBox" class="chat-box"></div>
+      
+      <div class="input-group">
+        <textarea id="userInput" placeholder="Ask anything..." rows="1"></textarea>
+        <button id="send" onclick="sendMessage()">
+          <i class="fa-solid fa-paper-plane" style="color: #ffffff;"></i>
+        </button>
+        <button id="mouth" onclick="startVoice()">
+          <i class="fa-solid fa-microphone-lines" style="color: #ffffff;"></i>
+        </button>
+      </div>
+      
+    </div>
+  </div>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  
+  <script>
+    const API_KEY = "AIzaSyDSIy5m7mTXlMMR_OOdCu2Af_EwoCd124w"; // Replace with your Gemini API Key
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+document.addEventListener('DOMContentLoaded', () => {
+    const chatBox = document.getElementById("chatBox");
+    const chatOverlay = document.getElementById("chatOverlay"); 
+    const userInput = document.getElementById("userInput");
+      // --- ELEMENT SELECTION ---
+  const topicInput = document.getElementById('topic-input');
+  const noteContentInput = document.getElementById('note-content-input');
+  const addNoteBtn = document.getElementById('add-note');
+  const notesContainer = document.getElementById('notes-container');
+  const categorySelect = document.getElementById('category-select');
+  const categoryList = document.getElementById('category-list');
+  const sidebar = document.getElementById('sidebar');
+  const categoryToggleBtn = document.getElementById('category-toggle');
+  const recycleBinToggleBtn = document.getElementById('recycle-bin-toggle');
+  const newNoteArea = document.querySelector('.new-note-area');
+  const setPasswordBtn = document.getElementById('set-password-btn');
+  const rotateBtn = document.getElementById('rotate-btn');
+  const fontStyleSelect = document.getElementById('font-style-select');
+  
+  // Global State for Image Control (NEW)
+  let selectedImageElement = null;
+  
+  // Password Modal Elements (kept for brevity)
+  const passwordModal = document.getElementById('password-modal');
+  const modalTitle = document.getElementById('modal-title');
+  const oldPasswordInput = document.getElementById('old-password-input');
+  const newPasswordInput = document.getElementById('password-input');
+  const confirmPasswordInput = document.getElementById('confirm-password-input');
+  const savePassBtn = document.getElementById('save-pass-btn');
+  const verifyPassBtn = document.getElementById('verify-pass-btn');
+  const oldPassLabel = document.getElementById('old-pass-label');
+  const confirmPassLabel = document.getElementById('confirm-pass-label');
+  const passwordMessage = document.getElementById('password-message');
+  
+  
+  // Default settings and data arrays
+  let notes = [];
+  let deletedNotes = [];
+  let isRecycleBinView = false;
+  let activeCategory = 'All';
+  let isSidebarOpen = false;
+  let gfbfAccessGranted = false;
+  let currentFontSize = 16;
+  
+   
+    // Global Rich Text Command Helper (UPDATED for Image Alignment)
+    window.execFormatCommand = (command, value = null) => {
+        // 1. Check if an image is selected AND the command is an alignment command
+        if (selectedImageElement && command.startsWith('justify')) {
+            let alignment = 'left';
+            if (command === 'justifyCenter') alignment = 'center';
+            else if (command === 'justifyRight') alignment = 'right';
+            
+            // Apply alignment styles to the selected image
+            selectedImageElement.style.marginLeft = (alignment === 'center' || alignment === 'right') ? 'auto' : '10px';
+            selectedImageElement.style.marginRight = (alignment === 'center' || alignment === 'left') ? 'auto' : '10px';
+            
+            // Exit the function to prevent default rich text command
+            return;
+        }
+
+        // 2. Fallback to standard rich text command
+        noteContentInput.focus();
+        document.execCommand(command, false, value);
+    };
+
+    const CATEGORIES = [
+        'Family', 
+        'Girlfriend/boyfriend',
+        'Friends', 
+        'Institute', 
+        'Office', 
+        'Hospital', 
+        'Others'
+    ];
+
+    // --- UTILITY & STORAGE FUNCTIONS ---
+    const loadNotes = () => {
+        notes = JSON.parse(localStorage.getItem('notes')) || [];
+        deletedNotes = JSON.parse(localStorage.getItem('deletedNotes')) || [];
+        currentFontSize = parseInt(localStorage.getItem('fontSize')) || 16;
+        document.documentElement.style.setProperty('--note-font-size', `${currentFontSize}px`);
+        
+        setupCategoryUI();
+        renderNotes(); 
+
+        const currentMode = localStorage.getItem('mode') || 'light-mode';
+        document.body.className = currentMode;
+    };
+
+    const saveNotes = () => {
+        localStorage.setItem('notes', JSON.stringify(notes));
+        localStorage.setItem('deletedNotes', JSON.stringify(deletedNotes));
+    };
+    
+    const getPassword = () => localStorage.getItem('gfbf_password');
+
+    const formatDateTime = (timestamp) => {
+        const date = new Date(timestamp);
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    };
+
+    // --- PASSWORD MODAL LOGIC (Unchanged) ---
+    const openPasswordModal = (mode) => {
+        passwordModal.classList.add('open');
+        passwordMessage.textContent = '';
+        
+        const hasPassword = getPassword();
+        const isSettingOrChanging = mode === 'set' || mode === 'change';
+
+        modalTitle.textContent = isSettingOrChanging ? 
+            (hasPassword ? 'Change GF/BF Password' : 'Set New GF/BF Password') : 
+            'Enter Password to Access GF/BF';
+
+        savePassBtn.style.display = isSettingOrChanging ? 'inline-block' : 'none';
+        verifyPassBtn.style.display = mode === 'verify' ? 'inline-block' : 'none';
+        
+        oldPassLabel.style.display = mode === 'change' ? 'block' : 'none';
+        oldPasswordInput.style.display = mode === 'change' ? 'block' : 'none';
+        confirmPassLabel.style.display = isSettingOrChanging ? 'block' : 'none';
+        confirmPasswordInput.style.display = isSettingOrChanging ? 'block' : 'none';
+        
+        newPasswordInput.placeholder = isSettingOrChanging ? 'New Password' : 'Enter Password';
+        oldPasswordInput.value = newPasswordInput.value = confirmPasswordInput.value = '';
+    };
+    
+    setPasswordBtn.addEventListener('click', () => {
+        const mode = getPassword() ? 'change' : 'set';
+        openPasswordModal(mode);
+    });
+    
+    savePassBtn.addEventListener('click', () => {
+        const oldPass = oldPasswordInput.value;
+        const newPass = newPasswordInput.value;
+        const confirmPass = confirmPasswordInput.value;
+        const savedPass = getPassword();
+
+        if (getPassword() && oldPass !== savedPass) {
+            passwordMessage.textContent = 'Old password is incorrect!';
+            return;
+        }
+        if (newPass !== confirmPass) {
+            passwordMessage.textContent = 'New password and confirmation do not match!';
+            return;
+        }
+        if (newPass.length < 4) {
+             passwordMessage.textContent = 'Password must be at least 4 characters long.';
+             return;
+        }
+
+        localStorage.setItem('gfbf_password', newPass);
+        passwordModal.classList.remove('open');
+        alert('Password successfully set/changed!');
+    });
+    
+    verifyPassBtn.addEventListener('click', () => {
+        const inputPass = newPasswordInput.value;
+        const savedPass = getPassword();
+        
+        if (inputPass === savedPass) {
+            gfbfAccessGranted = true;
+            passwordModal.classList.remove('open');
+            activeCategory = 'Girlfriend/boyfriend'; 
+            renderNotes();
+        } else {
+            passwordMessage.textContent = 'Incorrect password. Access denied.';
+            newPasswordInput.value = '';
+            gfbfAccessGranted = false;
+        }
+    });
+
+    document.getElementById('cancel-pass-btn').addEventListener('click', () => {
+        passwordModal.classList.remove('open');
+    });
+
+
+    // --- IMAGE MANIPULATION LOGIC (FIXED) ---
+
+    // 1. Image Selection Fix
+    noteContentInput.addEventListener('click', (e) => {
+        // Deselect the previously selected image
+        if (selectedImageElement) {
+            selectedImageElement.style.border = '2px solid transparent';
+            selectedImageElement.removeAttribute('tabindex');
+            selectedImageElement = null;
+        }
+        
+        // If the click was on an image, select it
+        if (e.target.tagName === 'IMG') {
+            selectedImageElement = e.target;
+            // Apply dashed border for visual selection feedback
+            selectedImageElement.style.border = '2px dashed #007bff';
+            selectedImageElement.setAttribute('tabindex', 0); 
+            selectedImageElement.focus(); // Focus to aid selection
+        }
+    });
+
+    // 2. Resize Function (uses global state)
+    window.resizeSelectedImage = (size) => {
+        const img = selectedImageElement;
+        if (!img) {
+            alert('Image resize karne ke liye, kripya note content area main image par click karke use select karein.');
+            return;
+        }
+        
+        let width = '40%'; // Default size
+        if (size === 'small') {
+            width = '25%';
+        } else if (size === 'large') {
+            width = '50%';
+        }
+
+        img.style.width = width;
+        img.style.height = 'auto'; // Maintain aspect ratio
+    };
+
+    // 3. Rotate Function (uses global state)
+    const rotateSelectedImage = () => {
+        const img = selectedImageElement;
+        if (!img) {
+            alert('Image rotate karne ke liye, kripya note content area main image par click karke use select karein.');
+            return;
+        }
+
+        // Get current rotation state (stored in data-rotation attribute or default to 0)
+        let currentDeg = parseInt(img.dataset.rotation || 0);
+        
+        // Cycle: 0 -> 90 -> 180 -> 270 -> 0...
+        currentDeg = (currentDeg + 90) % 360; 
+        
+        img.style.transform = `rotate(${currentDeg}deg)`;
+        img.dataset.rotation = currentDeg; // Store the new state on the image element
+    };
+    
+    rotateBtn.addEventListener('click', (e) => {
+        e.preventDefault(); 
+        rotateSelectedImage();
+    });
+
+
+    // --- REST OF THE CODE (UI & Data) ---
+    
+    // UI FUNCTIONS
+    const setupCategoryUI = () => {
+        categorySelect.innerHTML = CATEGORIES.map(cat => 
+            `<option value="${cat}">${cat}</option>`
+        ).join('');
+        
+        categoryList.innerHTML = `
+            <li class="category-item active" data-category="All">All Notes</li>
+            ${CATEGORIES.map(cat => 
+                `<li class="category-item" data-category="${cat}">${cat}</li>`
+            ).join('')}
+        `;
+    };
+    
+    const toggleSidebar = () => {
+        isSidebarOpen = !isSidebarOpen;
+        sidebar.classList.toggle('open', isSidebarOpen);
+    };
+    
+    const getNotesToRender = () => {
+        const targetNotes = isRecycleBinView ? deletedNotes : notes;
+
+        if (isRecycleBinView) {
+            return targetNotes;
+        }
+        
+        if (activeCategory === 'All') {
+            return targetNotes.filter(note => 
+                note.category !== 'Girlfriend/boyfriend' || gfbfAccessGranted
+            );
+        } else if (activeCategory === 'Girlfriend/boyfriend') {
+            return (!getPassword() || gfbfAccessGranted) ? 
+                targetNotes.filter(note => note.category === activeCategory) : 
+                [];
+        } else {
+            return targetNotes.filter(note => note.category === activeCategory);
+        }
+    };
+    
+    // --- UPDATED: SHARE NOTE AS TEXT FUNCTION (Renamed for clarity) ---
+    const shareNoteAsText = async (note) => {
+        // 1. Format the note content for sharing (text-only)
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = note.text;
+        const notePlainText = tempDiv.textContent || tempDiv.innerText || "";
+        
+        // 2. Create the final message text
+        const shareText = `*Note Topic:* ${note.topic}\n\n*Content:*\n${notePlainText}\n\n[Shared from Digital Note Hub - Category: ${note.category}]`;
+
+        // A. Try the Web Share API (Best for Mobile/Native Sharing)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: note.topic,
+                    text: shareText,
+                });
+                console.log('Note (Text) shared successfully via Web Share API.');
+            } catch (error) {
+                console.error('Text Sharing failed:', error);
+                fallbackToClipboard(shareText);
+            }
+        } else {
+            // B. Fallback: Copy to Clipboard
+            fallbackToClipboard(shareText);
+        }
+    };
+    
+    // Helper function for clipboard fallback
+    const fallbackToClipboard = (text) => {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Sharing via native app is not supported. The note content has been copied to your clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            alert('Could not copy note to clipboard.');
+        });
+    };
+    // --- END SHARE NOTE AS TEXT FUNCTION ---
+
+    
+    // --- NEW: SHARE NOTE AS IMAGE FUNCTION ---
+    const shareNoteAsImage = async (noteId, noteTopic) => {
+        const noteCard = document.querySelector(`.note-card[data-id="${noteId}"]`);
+        if (!noteCard) {
+            alert('Note card not found for image creation.');
+            return;
+        }
+
+        // 1. Action buttons ko chhipao (hide) for a cleaner screenshot
+        const actions = noteCard.querySelector('.note-actions');
+        if (actions) actions.style.display = 'none';
+        
+        // User ko batane ke liye ki process ho raha hai
+        const originalText = actions ? actions.innerHTML : '';
+        if (actions) actions.innerHTML = '<span style="color: #2575fc; font-weight: bold;">Processing Image...</span>';
+
+        try {
+            // 2. html2canvas ka use karke note card ko canvas mein badlo
+            const canvas = await html2canvas(noteCard, {
+                scale: 4, // Double the resolution for better quality
+                useCORS: true, // For handling Data URL images
+                backgroundColor: noteCard.style.backgroundColor || '#ffffff', // Background color capture
+            });
+
+            // 3. Action buttons ko wapas visible karo
+            if (actions) actions.innerHTML = originalText; 
+            if (actions) actions.style.display = 'flex'; 
+
+            const dataUrl = canvas.toDataURL('image/png');
+            
+            // 4. Native Sharing (Mobile support ke liye Blob use karna)
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([''], 'note.png', { type: 'image/png' })] })) {
+                
+                // Data URL ko Blob mein badlo
+                const blob = await (await fetch(dataUrl)).blob();
+                const file = new File([blob], `${noteTopic.replace(/[^a-z0-9]/gi, '_')}.png`, { type: 'image/png' });
+
+                await navigator.share({
+                    files: [file],
+                    title: `Note: ${noteTopic}`,
+                    text: 'Shared note image from Digital Note Hub',
+                });
+                console.log('Image shared successfully via Web Share API.');
+
+            } else {
+                // 5. Fallback: Image ko download karo
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = `${noteTopic.replace(/[^a-z0-9]/gi, '_')}_Note.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                alert('Native sharing is not supported. The note image has been downloaded to your device. Aap isse fir se share kar sakte hain.');
+            }
+
+        } catch (error) {
+            // Agar error aaye to buttons ko wapas dikhao
+            if (actions) actions.innerHTML = originalText; 
+            if (actions) actions.style.display = 'flex'; 
+            console.error('Error sharing note as image:', error);
+            alert('Note ko image main convert karne main error aa gaya.');
+        }
+    };
+    // --- END NEW SHARE NOTE AS IMAGE FUNCTION ---
+
+
+    // NOTE RENDERING (UI)
+    const renderNotes = () => {
+        const notesToRender = getNotesToRender();
+
+        notesContainer.innerHTML = '';
+        
+        if (isRecycleBinView) {
+            if (notesToRender.length === 0) {
+                 notesContainer.innerHTML = `<p class="empty-message">Recycle Bin is empty!</p>`;
+            } else {
+                notesToRender.forEach(renderDeletedNote);
+            }
+        } else if (activeCategory === 'Girlfriend/boyfriend' && getPassword() && !gfbfAccessGranted) {
+            notesContainer.innerHTML = `<p class="empty-message">This category is **Password Protected**. Click 'Pass' to verify.</p>`;
+        } else if (notesToRender.length === 0) {
+            notesContainer.innerHTML = `<p class="empty-message">No active notes found in '<strong>${activeCategory}</strong>'.</p>`;
+        } else {
+            notesToRender.forEach(renderActiveNote);
+        }
+        
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.category === activeCategory);
+        });
+    };
+    
+    const renderActiveNote = (note) => {
+        const noteCard = document.createElement('div');
+        noteCard.className = 'note-card';
+        noteCard.dataset.id = note.id;
+        noteCard.style.fontFamily = note.fontStyle; 
+        noteCard.style.color = note.fontColor;
+        
+        // --- UPDATED RENDERED HTML WITH COPYRIGHT INFO ---
+        noteCard.innerHTML = `
+            <h2 contenteditable="false">${note.topic}</h2>
+            <div class="note-content" contenteditable="false">${note.text}</div>
+            <div class="note-info">
+                <small>Category: <strong>${note.category}</strong> | Created: ${formatDateTime(note.timestamp)}</small>
+                <p class="copyright-info">&copy; Created by Santosh</p> 
+            </div>
+            <div class="note-actions">
+                <button class="share-img-btn"><i class="fa-solid fa-camera"></i> Share Image</button>
+                <button class="share-txt-btn"><i class="fa-brands fa-whatsapp"></i> Share Text</button>
+                <button class="edit-btn"><i class="fa-solid fa-pen-to-square"></i> Edit</button>
+                <button class="delete-btn"><i class="fa-solid fa-trash-can"></i> Delete (To Bin)</button>
+                <button class="save-btn" style="display:none; background: #28a745; color: white;"><i class="fa-solid fa-save"></i> Save</button>
+            </div>
+        `;
+        // --- END UPDATED RENDERED HTML ---
+        notesContainer.prepend(noteCard);
+    };
+
+    const renderDeletedNote = (note) => {
+        const noteCard = document.createElement('div');
+        noteCard.className = 'note-card deleted-card';
+        noteCard.dataset.id = note.id;
+        noteCard.style.fontFamily = note.fontStyle; 
+        noteCard.style.color = note.fontColor;
+
+        noteCard.innerHTML = `
+            <h2 style="color: #dc3545;">[DELETED] ${note.topic}</h2>
+            <div class="note-content" style="max-height: 100px; overflow: hidden; opacity: 0.8;">${note.text}</div>
+            <div class="note-info">
+                <small>Deleted: ${formatDateTime(note.deletedTimestamp)}</small>
+            </div>
+            <div class="note-actions">
+                <button class="restore-btn" style="background: #17a2b8; color: white;"><i class="fa-solid fa-rotate-left"></i> Restore</button>
+                <button class="permanent-delete-btn" style="background: #dc3545; color: white;"><i class="fa-solid fa-fire"></i> Delete Permanently</button>
+            </div>
+        `;
+        notesContainer.prepend(noteCard);
+    };
+
+    // EVENT LISTENERS
+    
+    categoryToggleBtn.addEventListener('click', toggleSidebar);
+
+    categoryList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('category-item')) {
+            const newCategory = e.target.dataset.category;
+            
+            if (newCategory === 'Girlfriend/boyfriend' && getPassword() && !gfbfAccessGranted) {
+                openPasswordModal('verify');
+                return; 
+            } else {
+                gfbfAccessGranted = false;
+            }
+
+            activeCategory = newCategory;
+            isRecycleBinView = false;
+            newNoteArea.style.display = 'block';
+            renderNotes();
+            toggleSidebar();
+        }
+    });
+
+    // ADD Note 
+    addNoteBtn.addEventListener('click', () => {
+        const topic = topicInput.value.trim();
+        const content = noteContentInput.innerHTML.trim(); 
+        const category = categorySelect.value || 'Uncategorized'; 
+        
+        if (!topic || !content || content.replace(/<[^>]+>/g, '').trim() === '') {
+             alert('Topic and Note content cannot be empty!');
+             return;
+        }
+        
+        if (category === 'Girlfriend/boyfriend' && getPassword() && !gfbfAccessGranted) {
+             alert('Please verify password to add notes to this category.');
+             openPasswordModal('verify');
+             return;
+        }
+
+        const newNote = {
+            id: Date.now().toString(),
+            topic: topic,
+            text: content, 
+            category: category, 
+            fontStyle: fontStyleSelect.value, 
+            fontColor: document.getElementById('font-color-picker').value, 
+            timestamp: Date.now(),
+        };
+        notes.push(newNote);
+        saveNotes();
+        
+        topicInput.value = '';
+        noteContentInput.innerHTML = ''; 
+        
+        activeCategory = category;
+        renderNotes();
+    });
+
+    // EDIT/SAVE/DELETE/RESTORE Logic 
+    notesContainer.addEventListener('click', (e) => {
+        const noteCard = e.target.closest('.note-card');
+        if (!noteCard) return;
+
+        const noteId = noteCard.dataset.id;
+        
+        if (isRecycleBinView) {
+            // Recycle Bin Actions
+            if (e.target.closest('.restore-btn')) {
+                const noteIndex = deletedNotes.findIndex(n => n.id === noteId);
+                const noteToRestore = deletedNotes.splice(noteIndex, 1)[0];
+                delete noteToRestore.deletedTimestamp;
+                notes.push(noteToRestore);
+                saveNotes();
+                // Set view back to active notes after restoring
+                toggleView(false); 
+
+            } else if (e.target.closest('.permanent-delete-btn')) {
+                if (confirm('Permanently delete this note?')) {
+                    const noteIndex = deletedNotes.findIndex(n => n.id === noteId);
+                    deletedNotes.splice(noteIndex, 1);
+                    saveNotes();
+                    renderNotes(); 
+                }
+            }
+        } else {
+            // Active Notes Actions
+            let noteIndex = notes.findIndex(n => n.id === noteId);
+            const note = notes[noteIndex]; 
+            const topicDiv = noteCard.querySelector('h2');
+            const contentDiv = noteCard.querySelector('.note-content');
+            const saveBtn = noteCard.querySelector('.save-btn');
+            const editBtn = noteCard.querySelector('.edit-btn');
+            
+            // --- UPDATED: SHARE BUTTON LOGIC ---
+            if (e.target.closest('.share-txt-btn')) { 
+                shareNoteAsText(note); // Use the renamed text share function
+                return;
+            } else if (e.target.closest('.share-img-btn')) { 
+                shareNoteAsImage(note.id, note.topic); // Use the new image share function
+                return;
+            }
+            // --- END UPDATED LOGIC ---
+
+            if (e.target.closest('.delete-btn')) {
+                if (confirm('Move to Recycle Bin?')) {
+                    const noteToDelete = notes.splice(noteIndex, 1)[0];
+                    noteToDelete.deletedTimestamp = Date.now();
+                    deletedNotes.push(noteToDelete);
+                    saveNotes();
+                    renderNotes(); 
+                }
+            } else if (e.target.closest('.edit-btn')) {
+                // EDIT Mode ON
+                topicDiv.contentEditable = 'true';
+                contentDiv.contentEditable = 'true';
+                topicDiv.focus();
+                
+                editBtn.style.display = 'none';
+                saveBtn.style.display = 'inline-block';
+
+            } else if (e.target.closest('.save-btn')) {
+                // EDIT Mode OFF (Save)
+                notes[noteIndex].topic = topicDiv.textContent.trim();
+                notes[noteIndex].text = contentDiv.innerHTML;
+                saveNotes();
+                
+                topicDiv.contentEditable = 'false'; 
+                contentDiv.contentEditable = 'false'; 
+                saveBtn.style.display = 'none';
+                editBtn.style.display = 'inline-block';
+                renderNotes(); 
+            }
+        }
+    });
+    
+    // Recycle Bin Toggle (UPDATED for robust icon/title setting)
+    const toggleView = (isBin) => {
+        isRecycleBinView = isBin;
+        newNoteArea.style.display = isBin ? 'none' : 'block';
+        
+        const icon = recycleBinToggleBtn.querySelector('i');
+
+        if (isBin) {
+            icon.className = 'fa-solid fa-book';
+            recycleBinToggleBtn.title = "View Active Notes"; // Updated title
+        } else {
+            icon.className = 'fa-solid fa-trash-can-arrow-up'; // Original icon for bin view
+            recycleBinToggleBtn.title = "View Recycle Bin"; // Updated title
+        }
+
+        categoryToggleBtn.style.display = isBin ? 'none' : 'inline-block';
+        renderNotes();
+    };
+
+    recycleBinToggleBtn.addEventListener('click', () => {
+        toggleView(!isRecycleBinView);
+        if (isSidebarOpen) toggleSidebar();
+    });
+
+    // UI Customization (Mode Toggle, Text Size)
+    document.getElementById('mode-toggle').addEventListener('click', () => {
+        const isLight = document.body.classList.contains('light-mode');
+        document.body.className = isLight ? 'dark-mode' : 'light-mode';
+        localStorage.setItem('mode', isLight ? 'dark-mode' : 'light-mode');
+        // Icon change for mode toggle
+        const modeIcon = document.querySelector('#mode-toggle i');
+        if (modeIcon) {
+             modeIcon.className = isLight ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
+    });
+    
+    const setTextSize = (size) => {
+        currentFontSize = Math.max(12, Math.min(30, size));
+        document.documentElement.style.setProperty('--note-font-size', `${currentFontSize}px`);
+        localStorage.setItem('fontSize', currentFontSize);
+    };
+
+    document.getElementById('increase-text').addEventListener('click', () => setTextSize(currentFontSize + 2));
+    document.getElementById('decrease-text').addEventListener('click', () => setTextSize(currentFontSize - 2));
+
+    // Image Upload Logic 
+    document.getElementById('image-upload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                // Insert the image and immediately deselect the content input 
+                noteContentInput.focus();
+                document.execCommand('insertImage', false, event.target.result);
+                document.getElementById('image-upload').value = ''; 
+                // Since execCommand can mess up focus, ensure the new image is not immediately selected
+                selectedImageElement = null; 
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    // --- NEW: BETA POPUP LOGIC (FULLY FIXED FOR 7s INTERVAL AND 5.5s DISPLAY) ---
+const betaPopup = document.getElementById('beta-popup');
+const closePopupBtn = document.getElementById('close-popup-btn');
+let popupIntervalId = null;
+
+// Function to show the popup with the 'show' class
+const showPopup = () => {
+    betaPopup.style.display = 'block';
+    setTimeout(() => {
+        betaPopup.classList.add('show');
+    }, 10); // Small delay to allow CSS transition to work
+};
+
+// Function to hide the popup
+const hidePopup = () => {
+    betaPopup.classList.remove('show');
+    setTimeout(() => {
+        betaPopup.style.display = 'none';
+    }, 500); // Wait for the transition (0.5s) to finish before hiding display
+};
+
+// Start the interval
+const startPopupInterval = () => {
+    // Show the pop-up for the first time
+    showPopup();
+    setTimeout(hidePopup, 5500);
+    
+    // Key Fix: Now the interval is 7 seconds (7000ms)
+    // Pop-up will display for 5.5s, hide, and then wait 1.5s before reappearing.
+    popupIntervalId = setInterval(() => {
+        // Only show it if the user hasn't closed it yet
+        if (betaPopup.dataset.stopped !== 'true') {
+            showPopup();
+            // Pop-up will stay visible for 5500ms (5.5 seconds)
+            setTimeout(hidePopup, 5500);
+        }
+    }, 7000); // <-- Key Change: 7000ms (7 seconds)
+    
+};
+
+// Stop the interval when the close button is clicked
+closePopupBtn.addEventListener('click', () => {
+    clearInterval(popupIntervalId);
+    betaPopup.dataset.stopped = 'true'; // Mark as stopped
+    hidePopup();
+    alert('Beta pop-up disabled for this session.');
+});
+
+// Start the whole process
+startPopupInterval();
+    
+    // --- INITIALIZATION ---
+    loadNotes();
+});
+
+    // Naya function: Chat modal ko dikhana/chupana
+    function toggleChatModal() {
+        chatOverlay.classList.toggle("active"); 
+    }
+    
+    // Naya feature: 'Enter' key press par message send karna
+    userInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault(); // Nayi line (newline) add hone se rokta hai
+            sendMessage();
+        }
+    });
+
+
+    function sendMessage() {
+      const userText = userInput.value.trim();
+      if (!userText) return;
+      
+      addMessage("user", userText);
+      userInput.value = "";
+      // Optional: Input height reset after sending
+      userInput.style.height = '40px'; 
+      getBotResponse(userText);
+    }
+    
+    // Naya feature: Textarea height ko content ke hisaab se adjust karna
+    userInput.addEventListener('input', function() {
+        this.style.height = 'auto'; // Reset height
+        // Set height to scrollHeight, but max out at a reasonable size (e.g., 5 lines)
+        const maxHeight = 20 * 5 + 20; // line-height (20px) * 5 lines + padding (approx)
+        this.style.height = Math.min(this.scrollHeight, maxHeight) + 'px';
+    });
+
+
+    function addMessage(sender, text) {
+      const msg = document.createElement("div");
+      msg.className = `message ${sender}`;
+      
+      if (sender === "bot" && text.includes("```")) {
+        const parsed = parseCode(text);
+        msg.innerHTML = parsed;
+      } else {
+        msg.innerText = text;
+      }
+      
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function parseCode(text) {
+      return text.replace(/```(\w+)?([\s\S]*?)```/g, (_, lang, code) => {
+        // lang is optional, we don't use it but it's good practice
+        return `<pre><code>${escapeHtml(code.trim())}</code></pre>`;
+      });
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    async function getBotResponse(prompt) {
+      const thinking = document.createElement("div");
+      thinking.className = "message bot";
+      thinking.innerText = "Typing...";
+      chatBox.appendChild(thinking);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        
+        const data = await res.json();
+        const aiText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "❌ No response.";
+        thinking.remove();
+        addMessage("bot", aiText);
+      } catch (err) {
+        thinking.remove();
+        addMessage("bot", "⚠️ Error getting response.");
+      }
+    }
+
+    // Voice input (Remains the same but ensures recognition object is available)
+    function startVoice() {
+      // Check for browser support
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert("Sorry, your browser does not support Web Speech API for voice input.");
+        return;
+      }
+        
+      const recognition = new(window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.start();
+        
+      userInput.placeholder = "Listening...";
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        userInput.value = transcript;
+        userInput.placeholder = "Ask anything...";
+      };
+      recognition.onerror = (event) => {
+        userInput.placeholder = "Ask anything...";
+        console.error("Voice input error:", event.error);
+        alert("Voice input error: " + event.error + ". Please try again.");
+      };
+      
+      // Stop listening after a while or when no speech is detected
+      recognition.onspeechend = () => {
+        recognition.stop();
+        userInput.placeholder = "Ask anything...";
+      };
+    }
+  </script>
+</body>
+
+</html>
